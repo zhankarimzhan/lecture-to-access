@@ -61,7 +61,34 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 .greet { font-size: 28px; font-weight: 400; }
 .cols { display: grid; grid-template-columns: 300px minmax(0,1fr) 280px; gap: 16px; align-items: start; }
 @media (max-width: 1150px) { .cols { grid-template-columns: 260px minmax(0,1fr); } .cols .right { grid-column: 1 / -1; } }
-@media (max-width: 760px) { .cols { grid-template-columns: 1fr; } }
+.mtabs { display: none; }
+@media (max-width: 760px) {
+  body { font-size: 16px; }
+  .page { gap: 12px; padding-block: 12px 32px; }
+  .cols { grid-template-columns: 1fr; gap: 12px; }
+  .cols main { order: -1; }
+  .navcard { display: none; }
+  .mtabs { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; position: sticky; top: calc(env(safe-area-inset-top, 0px) + 60px); z-index: 4; background: var(--bg); padding-block: 8px; border-bottom: 1px solid var(--line); }
+  .mtabs a { flex: none; padding: 8px 12px; border: 1px solid var(--secondary); border-radius: 999px; color: var(--fg); font-size: 14px; white-space: nowrap; }
+  .mtabs a:hover { text-decoration: none; }
+  .mtabs a[aria-current="page"] { background: var(--primary); border-color: var(--primary); color: #fff; }
+  .page-header h1 { font-size: 26px; }
+  .crumbs .mid { display: none; }
+  .greet { font-size: 19px; }
+  main.card { padding: 14px !important; }
+  body .main-title { font-size: 22px; }
+  .card { padding: 14px; }
+  body .post { padding: 12px; }
+  body .drop { padding: 16px; }
+  body .screen { min-height: 150px; padding: 12px; }
+  body .seg { grid-template-columns: 1fr; gap: 4px; }
+  body .tr p { grid-template-columns: 44px minmax(0,1fr); }
+  body button { min-height: 44px; }
+  body button.link { min-height: 32px; }
+  body textarea, body select, body input { font-size: 16px; }
+  .rolesw a { padding: 8px 10px; }
+  .navbar .in { gap: 10px; }
+}
 .side { display: grid; gap: 16px; min-width: 0; }
 .block-title { font-size: 20px; font-weight: 400; }
 
@@ -171,8 +198,8 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
     <h1>Lecture-to-Access</h1>
     <div class="crumbs">
       <a href="#upload">Home</a><span class="sep">/</span>
-      <a href="#upload">My courses</a><span class="sep">/</span>
-      <a href="#upload">Higher Education Pedagogy</a><span class="sep">/</span>
+      <a href="#upload" class="mid">My courses</a><span class="sep mid">/</span>
+      <a href="#upload" class="mid">Higher Education Pedagogy</a><span class="sep mid">/</span>
       <a href="#upload">Week 9</a><span class="sep">/</span>
       <span id="crumbNow">Upload recording</span>
     </div>
@@ -180,10 +207,17 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
 
   <p class="greet" id="greet">Hi, teacher! Turn a lecture into captions, notes and a glossary.</p>
 
+  <nav class="mtabs" aria-label="Prototype steps">
+    <a href="#upload" data-view="upload">1 Upload</a>
+    <a href="#review" data-view="review">2 Review</a>
+    <a href="#student" data-view="student">3 Student</a>
+    <a href="#design" data-view="design">4 Minds and machines</a>
+  </nav>
+
   <div class="cols">
     <!-- LEFT BLOCKS -->
     <aside class="side">
-      <div class="card">
+      <div class="card navcard">
         <h2 class="block-title">Navigation</h2>
         <ul class="tree">
           <li><span class="open"></span><a href="#upload">Home</a>
@@ -426,7 +460,7 @@ const CRUMB = { upload: "Upload recording", review: "Review and publish", studen
 function show() {
   const v = VIEWS.includes(location.hash.slice(1)) ? location.hash.slice(1) : "upload";
   VIEWS.forEach(n => { $("v-" + n).hidden = n !== v; });
-  document.querySelectorAll(".tree a[data-view]").forEach(a => {
+  document.querySelectorAll(".tree a[data-view], .mtabs a[data-view]").forEach(a => {
     if (a.dataset.view === v) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
   });
   $("crumbNow").textContent = CRUMB[v];
