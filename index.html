@@ -46,6 +46,14 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 .logo { width: 34px; height: 34px; flex: none; }
 .navbar .lang { color: var(--muted); font-size: 15px; }
 .navbar .sp { flex: 1; }
+.gear { position: relative; }
+.gearbtn { display: grid; place-items: center; width: 40px; height: 40px; padding: 0; border-radius: 50%; background: transparent; border: 1px solid transparent; color: var(--muted); }
+.gearbtn:hover:not(:disabled), .gearbtn[aria-expanded="true"] { background: #e9ecef; border-color: #e9ecef; color: var(--fg); }
+.gearmenu { position: absolute; top: 46px; left: 0; z-index: 20; min-width: 240px; background: var(--bg); border: 1px solid var(--line); border-radius: .5rem; box-shadow: 0 6px 18px rgba(0,0,0,.14); padding: 6px; display: grid; }
+.gearmenu .gearhead { font-size: 12px; color: var(--muted); padding: 6px 10px 4px; text-transform: uppercase; letter-spacing: .04em; }
+.gearmenu a { display: flex; justify-content: space-between; gap: 12px; padding: 10px; border-radius: .4rem; color: var(--fg); }
+.gearmenu a:hover { background: var(--page); text-decoration: none; }
+.gearmenu a span { font-size: 12px; font-weight: 700; color: var(--muted); }
 .navbar .user { display: flex; align-items: center; gap: 10px; color: var(--muted); }
 .avatar { width: 36px; height: 36px; border-radius: 50%; background: #e9ecef; color: var(--fg); display: grid; place-items: center; font-size: 14px; }
 .rolesw { display: flex; border: 1px solid var(--secondary); border-radius: .5rem; overflow: hidden; }
@@ -187,6 +195,17 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
       <circle cx="17" cy="17" r="4" fill="#1d2125"/>
     </svg>
     <span class="lang">English (en) ⌄</span>
+    <div class="gear">
+      <button type="button" id="gearBtn" class="gearbtn" aria-haspopup="true" aria-expanded="false" aria-controls="gearMenu" aria-label="Exam materials">
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M19.4 13a7.6 7.6 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.4 7.4 0 0 0-1.7-1L15 3.3h-4l-.4 2.6a7.4 7.4 0 0 0-1.7 1l-2.5-1-2 3.5L6.5 11a7.6 7.6 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1a7.4 7.4 0 0 0 1.7 1l.4 2.6h4l.4-2.6a7.4 7.4 0 0 0 1.7-1l2.5 1 2-3.5zM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z" transform="translate(-1 0)"/></svg>
+      </button>
+      <div class="gearmenu" id="gearMenu" role="menu" hidden>
+        <p class="gearhead">Exam materials · Group 4</p>
+        <a role="menuitem" href="https://zhankarimzhan.github.io/lecture-to-access/poster.pdf" target="_blank" rel="noopener">Poster <span>PDF</span></a>
+        <a role="menuitem" href="https://zhankarimzhan.github.io/lecture-to-access/presentation.pdf" target="_blank" rel="noopener">Presentation <span>PDF</span></a>
+        <a role="menuitem" href="https://zhankarimzhan.github.io/lecture-to-access/presentation.pptx" target="_blank" rel="noopener">Presentation <span>PPTX</span></a>
+      </div>
+    </div>
     <span class="sp"></span>
     <div class="rolesw" aria-label="Switch demo role">
       <a href="#upload" id="roleTeacher">Teacher</a>
@@ -610,6 +629,12 @@ $("liveBtn").addEventListener("click", () => {
   rec.onend = () => { if (rec) { try { rec.start(); } catch (_) {} } };
   try { rec.start(); $("liveBtn").textContent = "Stop live captions"; $("liveBox").textContent = "Listening…"; } catch (_) { $("liveBox").textContent = "Could not start speech recognition."; }
 });
+
+/* exam materials menu */
+function setGear(open) { $("gearMenu").hidden = !open; $("gearBtn").setAttribute("aria-expanded", String(open)); }
+$("gearBtn").addEventListener("click", e => { e.stopPropagation(); setGear($("gearMenu").hidden); });
+document.addEventListener("click", e => { if (!e.target.closest(".gear")) setGear(false); });
+document.addEventListener("keydown", e => { if (e.key === "Escape") setGear(false); });
 
 show(); status();
 </script>
