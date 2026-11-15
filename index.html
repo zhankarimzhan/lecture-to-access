@@ -1,0 +1,580 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
+<title>Lecture-to-Access</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: LMS-style page — top navbar, page header card, then left blocks / main region / right block, stacking on phones. Single light theme to match the university LMS. */
+:root {
+  color-scheme: light;
+  --bg: #ffffff;
+  --page: #f8f9fa;
+  --fg: #1d2125;
+  --muted: #6a737b;
+  --line: #dee2e6;
+  --link: #0f6cbf;
+  --link-hover: #0a4b84;
+  --primary: #0f6cbf;
+  --secondary: #ced4da;
+  --warn-bg: #fcefdc; --warn-fg: #7d5a29; --warn: #f0ad4e;
+  --ok-bg: #d7e6d7;   --ok-fg: #1c421b;   --ok: #357a32;
+  --info-bg: #cce6ea; --info-fg: #00434e; --info: #008196;
+  --danger-bg: #f4d6d2; --danger-fg: #6e1d14; --danger: #ca3120;
+  --caption: #ffe27a;
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
+  --mono: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --cap-size: 20px;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font: 15px/1.5 var(--font); }
+body.hc { --bg:#000; --page:#000; --fg:#fff; --muted:#ddd; --line:#fff; --link:#ffe27a; --primary:#ffe27a; }
+a { color: var(--link); text-decoration: none; }
+a:hover { color: var(--link-hover); text-decoration: underline; }
+h1, h2, h3 { font-weight: 700; margin: 0; text-wrap: balance; }
+p { margin: 0; }
+:focus-visible { outline: 0; box-shadow: 0 0 0 .2rem rgba(15,108,191,.75); border-radius: 2px; }
+
+/* navbar */
+.navbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line); box-shadow: 0 2px 4px rgba(0,0,0,.08); }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+.navbar .in { display: flex; align-items: center; gap: 14px; height: 60px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.logo { width: 34px; height: 34px; flex: none; }
+.navbar .lang { color: var(--muted); font-size: 15px; }
+.navbar .sp { flex: 1; }
+.navbar .user { display: flex; align-items: center; gap: 10px; color: var(--muted); }
+.avatar { width: 36px; height: 36px; border-radius: 50%; background: #e9ecef; color: var(--fg); display: grid; place-items: center; font-size: 14px; }
+.rolesw { display: flex; border: 1px solid var(--secondary); border-radius: .5rem; overflow: hidden; }
+.rolesw a { padding: 5px 10px; font-size: 13px; color: var(--fg); }
+.rolesw a.on { background: var(--primary); color: #fff; }
+.rolesw a:hover { text-decoration: none; }
+@media (max-width: 560px) { .navbar .lang, .navbar .uname { display: none; } }
+
+/* page */
+.page { padding-block: 16px 48px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 16px; max-width: 1500px; margin: 0 auto; }
+.card { background: var(--bg); border: 1px solid var(--line); border-radius: .5rem; padding: 16px 18px; display: grid; gap: 12px; min-width: 0; }
+.page-header h1 { font-size: 32px; line-height: 1.2; }
+.crumbs { display: flex; flex-wrap: wrap; gap: 6px; font-size: 15px; color: var(--muted); }
+.crumbs span.sep { color: var(--muted); }
+.greet { font-size: 28px; font-weight: 400; }
+.cols { display: grid; grid-template-columns: 300px minmax(0,1fr) 280px; gap: 16px; align-items: start; }
+@media (max-width: 1150px) { .cols { grid-template-columns: 260px minmax(0,1fr); } .cols .right { grid-column: 1 / -1; } }
+@media (max-width: 760px) { .cols { grid-template-columns: 1fr; } }
+.side { display: grid; gap: 16px; min-width: 0; }
+.block-title { font-size: 20px; font-weight: 400; }
+
+/* nav tree */
+.tree { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.tree ul { list-style: none; margin: 4px 0 0; padding-left: 18px; display: grid; gap: 6px; }
+.tree .open::before { content: "⌄ "; color: var(--fg); }
+.tree a[aria-current="page"] { font-weight: 700; color: var(--fg); }
+.tree .ico { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: var(--primary); color: #fff; font-size: 11px; margin-right: 6px; vertical-align: -3px; }
+.tree .done-mark { color: var(--ok); font-size: 13px; margin-left: 4px; }
+
+/* badges and buttons */
+.badge { display: inline-block; font-size: 12px; font-weight: 700; line-height: 1; padding: 4px 7px; border-radius: .5rem; vertical-align: middle; white-space: nowrap; }
+.badge.sim { background: var(--warn-bg); color: var(--warn-fg); }
+.badge.live { background: var(--ok-bg); color: var(--ok-fg); }
+.badge.human { background: var(--info-bg); color: var(--info-fg); }
+button { font: inherit; border-radius: .5rem; padding: 6px 12px; cursor: pointer; border: 1px solid var(--primary); background: var(--primary); color: #fff; }
+button:hover:not(:disabled) { background: var(--link-hover); border-color: var(--link-hover); }
+button.secondary { background: var(--secondary); border-color: var(--secondary); color: var(--fg); }
+button.secondary:hover:not(:disabled) { background: #b8c1ca; border-color: #b8c1ca; }
+button.link { background: none; border: 0; color: var(--link); padding: 0 4px; font-size: 13px; }
+button.link:hover:not(:disabled) { background: none; text-decoration: underline; }
+button:disabled { opacity: .65; cursor: not-allowed; }
+.alert { border-radius: .5rem; padding: 10px 14px; font-size: 14px; border: 1px solid; }
+.alert.warn { background: var(--warn-bg); color: var(--warn-fg); border-color: #f9dfb9; }
+.alert.ok { background: var(--ok-bg); color: var(--ok-fg); border-color: #b1cdb0; }
+.alert.info { background: var(--info-bg); color: var(--info-fg); border-color: #99ccd5; }
+
+/* main content */
+.view { display: grid; gap: 16px; }
+.main-title { font-size: 30px; font-weight: 400; }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.between { justify-content: space-between; }
+.note { font-size: 14px; color: var(--muted); }
+.post { border: 1px solid var(--line); border-radius: .5rem; padding: 14px 16px; display: grid; gap: 10px; min-width: 0; }
+.post h3 { font-size: 17px; }
+.post .by { font-size: 14px; color: var(--muted); }
+.post-head { display: grid; grid-template-columns: 44px 1fr; gap: 10px; align-items: start; }
+.post-head .avatar { width: 44px; height: 44px; }
+.grid2 { display: grid; grid-template-columns: minmax(0,1.3fr) minmax(0,1fr); gap: 16px; align-items: start; }
+@media (max-width: 980px) { .grid2 { grid-template-columns: 1fr; } }
+.drop { border: 2px dashed var(--secondary); border-radius: .5rem; padding: 22px; display: grid; gap: 10px; justify-items: center; text-align: center; background: var(--page); }
+.drop .arrow { font-size: 28px; color: var(--muted); line-height: 1; }
+input[type=file] { font: inherit; max-width: 100%; }
+.steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; border: 1px solid var(--line); border-radius: .5rem; overflow: hidden; }
+.steps li { display: grid; grid-template-columns: 22px 1fr auto; gap: 10px; align-items: center; padding: 10px 12px; border-top: 1px solid var(--line); }
+.steps li:first-child { border-top: 0; }
+.steps .dot { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--secondary); }
+.steps li.run { background: var(--page); }
+.steps li.run .dot { border-color: var(--primary); border-top-color: transparent; animation: spin .8s linear infinite; }
+.steps li.done .dot { background: var(--ok); border-color: var(--ok); }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .steps li.run .dot { animation: none; background: var(--info-bg); } }
+.who { font-size: 12px; color: var(--muted); }
+.seg { display: grid; grid-template-columns: 56px minmax(0,1fr); gap: 10px; padding: 10px 0; border-top: 1px solid var(--line); }
+.seg:first-child { border-top: 0; }
+.ts { font: 13px var(--mono); color: var(--muted); padding-top: 2px; }
+.asr mark { background: var(--danger-bg); color: var(--danger-fg); border-bottom: 2px solid var(--danger); padding: 0 2px; }
+textarea, select { width: 100%; font: inherit; color: var(--fg); background: var(--bg); border: 1px solid #8f959e; border-radius: .5rem; padding: 6px 10px; }
+textarea { resize: vertical; }
+select { width: auto; }
+.check { display: flex; gap: 8px; align-items: center; font-size: 14px; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; padding: 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-weight: 700; background: var(--page); }
+.tablewrap { overflow-x: auto; }
+.player { display: grid; gap: 10px; }
+.screen { background: #1d2125; border-radius: .5rem; min-height: 200px; display: grid; align-content: end; padding: 18px; }
+.screen .slide { color: #adb5bd; font: 13px var(--mono); align-self: start; margin-bottom: auto; }
+.cap { justify-self: center; text-align: center; background: var(--caption); color: #1d2125; font-size: var(--cap-size); line-height: 1.35; padding: 6px 12px; border-radius: 4px; max-width: 100%; font-weight: 700; }
+.bar { height: 6px; background: #e9ecef; border-radius: 3px; overflow: hidden; }
+.bar > i { display: block; height: 100%; width: 0; background: var(--primary); }
+.tr p { padding: 6px 8px; border-radius: .5rem; cursor: pointer; display: grid; grid-template-columns: 50px minmax(0,1fr); gap: 8px; }
+.tr p:hover { background: var(--page); }
+.tr p.now { background: var(--info-bg); }
+.tr p .ts { padding-top: 1px; }
+ul.clean { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+.empty { color: var(--muted); font-size: 14px; border: 1px dashed var(--secondary); border-radius: .5rem; padding: 12px; }
+.q { border: 1px solid var(--line); border-left: 4px solid var(--info); border-radius: .5rem; padding: 10px 12px; display: grid; gap: 4px; }
+.livebox { min-height: 64px; border-radius: .5rem; padding: 10px; background: var(--page); border: 1px solid var(--line); font-size: var(--cap-size); }
+.kv { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; font-size: 14px; }
+.kv dt { color: var(--muted); }
+.kv dd { margin: 0; }
+.legend { display: grid; gap: 8px; font-size: 14px; }
+footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 12px; }
+</style>
+
+<div class="navbar">
+  <div class="in">
+    <svg class="logo" viewBox="0 0 34 34" aria-hidden="true">
+      <circle cx="17" cy="17" r="15" fill="none" stroke="#0f6cbf" stroke-width="2.5" stroke-dasharray="5 3"/>
+      <circle cx="17" cy="17" r="9" fill="none" stroke="#1d2125" stroke-width="2" stroke-dasharray="4 3"/>
+      <circle cx="17" cy="17" r="4" fill="#1d2125"/>
+    </svg>
+    <span class="lang">English (en) ⌄</span>
+    <span class="sp"></span>
+    <div class="rolesw" aria-label="Switch demo role">
+      <a href="#upload" id="roleTeacher">Teacher</a>
+      <a href="#student" id="roleStudent">Student</a>
+    </div>
+    <div class="user"><span class="uname" id="uname">Demo Teacher</span><span class="avatar" id="uav">DT</span></div>
+  </div>
+</div>
+
+<div class="page">
+  <div class="card page-header">
+    <h1>Lecture-to-Access</h1>
+    <div class="crumbs">
+      <a href="#upload">Home</a><span class="sep">/</span>
+      <a href="#upload">My courses</a><span class="sep">/</span>
+      <a href="#upload">Higher Education Pedagogy</a><span class="sep">/</span>
+      <a href="#upload">Week 9</a><span class="sep">/</span>
+      <span id="crumbNow">Upload recording</span>
+    </div>
+  </div>
+
+  <p class="greet" id="greet">Hi, teacher! Turn a lecture into captions, notes and a glossary.</p>
+
+  <div class="cols">
+    <!-- LEFT BLOCKS -->
+    <aside class="side">
+      <div class="card">
+        <h2 class="block-title">Navigation</h2>
+        <ul class="tree">
+          <li><span class="open"></span><a href="#upload">Home</a>
+            <ul>
+              <li><a href="#upload" data-view="upload"><span class="ico">1</span>Teacher: upload</a><span class="done-mark" id="m-upload" hidden>✓</span></li>
+              <li><a href="#review" data-view="review"><span class="ico">2</span>Teacher: review and publish</a><span class="done-mark" id="m-review" hidden>✓</span></li>
+              <li><a href="#student" data-view="student"><span class="ico">3</span>Student view</a></li>
+              <li><a href="#design" data-view="design"><span class="ico">4</span>Minds and machines</a></li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+      <div class="card">
+        <h2 class="block-title">About this prototype</h2>
+        <div class="legend">
+          <p><span class="badge sim">Simulated</span> pre-made sample output in place of AI processing (planned feature)</p>
+          <p><span class="badge live">Live</span> works now, browser speech recognition</p>
+          <p><span class="badge human">Human</span> step done by a teacher or student</p>
+        </div>
+        <p class="note">Group 4, ADA-2602 · Theme: Inclusive learning</p>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="card" style="padding:20px 22px">
+
+      <!-- 1. UPLOAD -->
+      <section class="view" id="v-upload">
+        <h2 class="main-title">Upload a lecture recording</h2>
+        <div class="alert warn">This is a prototype. Any file gives the same sample result. Planned: speech-to-text with an open model (Whisper), summary and glossary with a language model.</div>
+        <div class="grid2">
+          <div class="drop">
+            <span class="arrow" aria-hidden="true">⇩</span>
+            <label for="file">Choose an audio or video file (mp3, m4a, mp4)</label>
+            <input id="file" type="file" accept="audio/*,video/*">
+            <span class="note">or</span>
+            <button id="useSample" type="button">Use sample lecture</button>
+            <span class="note">Week 9: Technology and Innovation in HE · 2 min 35 s</span>
+          </div>
+          <div style="display:grid;gap:10px">
+            <div class="row between"><h3>Processing</h3><span class="badge sim">Simulated</span></div>
+            <ol class="steps" id="steps">
+              <li><span class="dot"></span><span>Speech to text with timestamps</span><span class="who">AI</span></li>
+              <li><span class="dot"></span><span>Mark words with low confidence</span><span class="who">AI</span></li>
+              <li><span class="dot"></span><span>Draft summary and self-check questions</span><span class="who">AI</span></li>
+              <li><span class="dot"></span><span>Glossary in English, Russian, Kazakh</span><span class="who">AI</span></li>
+              <li><span class="dot"></span><span>Wait for teacher review</span><span class="who">Human</span></li>
+            </ol>
+            <div><button id="toReview" type="button" disabled>Open review</button></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. REVIEW -->
+      <section class="view" id="v-review" hidden>
+        <h2 class="main-title">Review and publish</h2>
+        <p class="empty" id="notReady">Nothing to review yet. Upload a recording or use the sample lecture in step 1.</p>
+        <div id="reviewBody" hidden style="display:grid;gap:16px">
+          <div class="alert info"><span id="flagCount">0</span> segments need your check. Red words have low recognition confidence. Correct the text, then tick <b>Checked</b>.</div>
+          <div class="post">
+            <div class="row between"><h3>Transcript</h3><span class="badge sim">Simulated</span></div>
+            <div id="segList"></div>
+          </div>
+          <div class="grid2">
+            <div class="post">
+              <div class="row between"><h3>Summary draft</h3><span class="badge sim">Simulated</span></div>
+              <textarea id="sumEdit" rows="9" aria-label="Summary draft"></textarea>
+              <label class="check"><input type="checkbox" id="sumOk"> I checked the summary against the lecture</label>
+            </div>
+            <div class="post">
+              <div class="row between"><h3>Glossary draft</h3><span class="badge sim">Simulated</span></div>
+              <div class="tablewrap"><table id="glossEdit"></table></div>
+              <label class="check"><input type="checkbox" id="glossOk"> I checked the translations</label>
+            </div>
+          </div>
+          <div class="row">
+            <button id="publish" type="button" disabled>Publish to students</button>
+            <span class="note" id="pubNote">Unlocks when every flagged segment, the summary and the glossary are checked.</span>
+          </div>
+          <div class="post">
+            <h3>Student questions</h3>
+            <div id="teacherQs" style="display:grid;gap:8px"><p class="empty">No questions yet. Students can mark an unclear line in the student view.</p></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. STUDENT -->
+      <section class="view" id="v-student" hidden>
+        <h2 class="main-title">Week 9: Technology and Innovation in HE</h2>
+        <p class="empty" id="notPublished">The teacher has not published this lecture yet. Finish step 2 first.</p>
+        <div id="studentBody" hidden style="display:grid;gap:16px">
+          <div class="alert ok">Checked and published by the teacher.</div>
+          <div class="player">
+            <div class="screen" aria-hidden="true">
+              <span class="slide">Lecture recording · playback simulated, no audio in this prototype</span>
+              <div class="cap" id="cap">Press Play to start captions</div>
+            </div>
+            <div class="bar"><i id="prog"></i></div>
+            <div class="row">
+              <button id="play" type="button">Play</button>
+              <span class="ts" id="clock">00:00 / 02:35</span>
+              <label class="row" for="capSize" style="gap:6px"><span class="note">Caption size</span><input id="capSize" type="range" min="16" max="34" value="20"></label>
+              <label class="check"><input type="checkbox" id="hc"> High contrast</label>
+            </div>
+          </div>
+          <div class="grid2">
+            <div class="post tr">
+              <h3>Transcript</h3>
+              <span class="note">Click a line to jump. Mark a line you did not understand.</span>
+              <div id="trList"></div>
+            </div>
+            <div style="display:grid;gap:16px;min-width:0">
+              <div class="post"><h3>Summary</h3><div id="sumView"></div></div>
+              <div class="post">
+                <div class="row between"><h3>Glossary</h3>
+                  <select id="lang" aria-label="Glossary language"><option value="ru">Русский</option><option value="kz">Қазақша</option></select>
+                </div>
+                <div class="tablewrap"><table id="glossView"></table></div>
+              </div>
+              <div class="post">
+                <h3>Check yourself</h3>
+                <ul class="clean" id="qsView"></ul>
+                <span class="note">Questions ask you to explain, not to recall. We discuss them in the next seminar.</span>
+              </div>
+            </div>
+          </div>
+          <div class="post">
+            <div class="row between"><h3>Live captions in class <span class="badge live">Live</span></h3>
+              <button id="liveBtn" type="button" class="secondary">Start live captions</button></div>
+            <span class="note">Uses the browser's built-in speech recognition (Chrome or Edge, microphone permission). Captions are not saved.</span>
+            <div class="livebox" id="liveBox" aria-live="polite"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. DESIGN -->
+      <section class="view" id="v-design" hidden>
+        <h2 class="main-title">Minds and machines</h2>
+        <div class="tablewrap">
+          <table>
+            <tr><th>Step</th><th>Machine</th><th>Human</th></tr>
+            <tr><td>Captions</td><td>Speech to text, timestamps, marks unsure words</td><td>Teacher corrects names and terms the model mishears</td></tr>
+            <tr><td>Summary</td><td>Drafts key points and questions</td><td>Teacher decides what matters and edits before publishing</td></tr>
+            <tr><td>Glossary</td><td>Drafts terms in three languages</td><td>Teacher checks the translation of subject terms</td></tr>
+            <tr><td>Learning</td><td>Shows text, captions, translations on request</td><td>Student listens, reads the original, asks the teacher what is unclear</td></tr>
+          </table>
+        </div>
+        <div class="alert info">Nothing reaches students without a teacher's check. The original English lecture always stays on screen; translation helps but does not replace it.</div>
+        <div class="grid2">
+          <div class="post">
+            <h3>Why it matters</h3>
+            <ul class="clean">
+              <li>Students with hearing impairments, working students and students who missed a class get the same lecture.</li>
+              <li>Students with lower English can check a term in Kazakh or Russian and keep reading the original.</li>
+              <li>Kazakhstan's Concept of Inclusive Policy 2025–2030 moves from the medical model to removing barriers. Universities are not yet part of that chain.</li>
+              <li>Universal Design for Learning: several ways to receive the same content.</li>
+            </ul>
+          </div>
+          <div class="post">
+            <h3>Ethics and limits</h3>
+            <ul class="clean">
+              <li>Recording only with the teacher's consent; students are told before class.</li>
+              <li>Recordings processed on university servers, not public chat services.</li>
+              <li>Speech recognition is weaker on Kazakh and accented English, so human review stays required.</li>
+              <li>Notes must not replace attendance: no ready answers, questions ask for explanation.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- RIGHT BLOCK -->
+    <aside class="side right">
+      <div class="card">
+        <h2 class="block-title">Lecture status</h2>
+        <dl class="kv">
+          <dt>Course</dt><dd>Higher Education Pedagogy</dd>
+          <dt>Lecture</dt><dd>Week 9</dd>
+          <dt>Duration</dt><dd>2 min 35 s</dd>
+          <dt>Processed</dt><dd id="stProc">No</dd>
+          <dt>To check</dt><dd id="stCheck">—</dd>
+          <dt>Published</dt><dd id="stPub">No</dd>
+          <dt>Questions</dt><dd id="stQ">0</dd>
+        </dl>
+      </div>
+      <div class="card">
+        <h2 class="block-title">Quick links</h2>
+        <a href="#upload">Upload a recording</a>
+        <a href="#review">Review drafts</a>
+        <a href="#student">Open as student</a>
+        <a href="#design">Who does what</a>
+      </div>
+    </aside>
+  </div>
+
+  <footer>Prototype by Group 4, ADA-2602, for the Higher Education Pedagogy final exam. Not an official university system. Sample lecture text written by the group. Built with help from Claude (AI), disclosed in the submission.</footer>
+</div>
+
+<script>
+const LECTURE = [
+  { t: 0,   asr: "Today we talk about technology and innovation in higher education." },
+  { t: 12,  asr: "Mochi zuki and Brillard argue that technology does not improve learning by itself; pedagogy must lead.", flags: ["Mochi zuki", "Brillard"] },
+  { t: 31,  asr: "In a flip the classroom, students watch the lecture at home and use class time for discussion.", flags: ["flip the classroom"] },
+  { t: 52,  asr: "Blender learning combines online and face-to-face activities.", flags: ["Blender learning"] },
+  { t: 70,  asr: "The question is not which tool is new. The question is what the student does with it." },
+  { t: 86,  asr: "In some schools in China, students wear headbands that measure attention. This is data for control, not for learning." },
+  { t: 105, asr: "At Alpha School, students study core subjects with adaptive software for two hours a day." },
+  { t: 123, asr: "AI can adapt the pace, but the teacher still decides what is worth learning." },
+  { t: 140, asr: "For next week, think of one barrier that technology could remove for your students." }
+];
+const DURATION = 155;
+const SUMMARY = [
+  "Technology does not improve learning by itself; pedagogy decides how a tool is used (Mochizuki & Bruillard, 2019).",
+  "Flipped classroom: lecture at home, discussion and problem solving in class.",
+  "Blended learning combines online and face-to-face activities.",
+  "Key test for any tool: what does the student do with it?",
+  "Contrast: attention headbands (data for control) vs. adaptive software (pace for each student, teacher keeps judgement)."
+].join("\n");
+const QUESTIONS = [
+  "Explain in your own words why a new tool does not guarantee better learning.",
+  "Give one example where technology is used for control rather than learning.",
+  "Which barrier in your own course could technology remove? Who would still need to check the result?"
+];
+const GLOSS = [
+  { en: "Flipped classroom", ru: "перевёрнутый класс", kz: "төңкерілген сынып" },
+  { en: "Blended learning", ru: "смешанное обучение", kz: "аралас оқыту" },
+  { en: "Pedagogically driven integration", ru: "интеграция технологий на основе педагогики", kz: "педагогикаға негізделген кіріктіру" },
+  { en: "Adaptive learning", ru: "адаптивное обучение", kz: "бейімделген оқыту" },
+  { en: "Human oversight", ru: "контроль со стороны человека", kz: "адам бақылауы" }
+];
+
+const S = { processed: false, published: false, edits: LECTURE.map(s => s.asr), checked: LECTURE.map(s => !s.flags), questions: [], pos: 0, timer: null };
+const $ = id => document.getElementById(id);
+const esc = s => s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const mmss = t => String(Math.floor(t / 60)).padStart(2, "0") + ":" + String(Math.floor(t % 60)).padStart(2, "0");
+
+/* routing and role */
+const VIEWS = ["upload", "review", "student", "design"];
+const CRUMB = { upload: "Upload recording", review: "Review and publish", student: "Student view", design: "Minds and machines" };
+function show() {
+  const v = VIEWS.includes(location.hash.slice(1)) ? location.hash.slice(1) : "upload";
+  VIEWS.forEach(n => { $("v-" + n).hidden = n !== v; });
+  document.querySelectorAll(".tree a[data-view]").forEach(a => {
+    if (a.dataset.view === v) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
+  });
+  $("crumbNow").textContent = CRUMB[v];
+  const student = v === "student";
+  $("roleStudent").classList.toggle("on", student);
+  $("roleTeacher").classList.toggle("on", !student);
+  $("uname").textContent = student ? "Demo Student" : "Demo Teacher";
+  $("uav").textContent = student ? "DS" : "DT";
+  $("greet").textContent = student ? "Hi, student! Your lecture is ready with captions, notes and a glossary."
+                                   : "Hi, teacher! Turn a lecture into captions, notes and a glossary.";
+  if (!student) stopPlay();
+}
+window.addEventListener("hashchange", show);
+function status() {
+  const left = LECTURE.filter((s, i) => s.flags && !S.checked[i]).length;
+  $("stProc").textContent = S.processed ? "Yes" : "No";
+  $("stCheck").textContent = S.processed ? left + " segments" : "—";
+  $("stPub").textContent = S.published ? "Yes" : "No";
+  $("stQ").textContent = S.questions.length;
+  $("m-upload").hidden = !S.processed;
+  $("m-review").hidden = !S.published;
+}
+
+/* 1. processing (simulated) */
+function runProcessing() {
+  if (S.processed) { location.hash = "review"; return; }
+  const items = [...$("steps").children];
+  $("useSample").disabled = true; $("file").disabled = true;
+  let i = 0;
+  const step = () => {
+    if (i > 0) { items[i - 1].classList.remove("run"); items[i - 1].classList.add("done"); }
+    if (i === items.length - 1) { items[i].classList.add("run"); S.processed = true; buildReview(); $("toReview").disabled = false; status(); return; }
+    items[i].classList.add("run"); i++; setTimeout(step, 700);
+  };
+  step();
+}
+$("useSample").addEventListener("click", runProcessing);
+$("file").addEventListener("change", () => { if ($("file").files.length) runProcessing(); });
+$("toReview").addEventListener("click", () => { location.hash = "review"; });
+
+/* 2. review */
+function highlight(text, flags) {
+  let h = esc(text);
+  (flags || []).forEach(f => { h = h.replace(esc(f), "<mark>" + esc(f) + "</mark>"); });
+  return h;
+}
+function buildReview() {
+  $("notReady").hidden = true; $("reviewBody").hidden = false;
+  $("segList").innerHTML = LECTURE.map((s, i) => s.flags ? `
+    <div class="seg">
+      <span class="ts">${mmss(s.t)}</span>
+      <div style="display:grid;gap:6px;min-width:0">
+        <p class="asr">${highlight(s.asr, s.flags)}</p>
+        <textarea id="seg${i}" rows="2" aria-label="Corrected text at ${mmss(s.t)}">${esc(S.edits[i])}</textarea>
+        <label class="check"><input type="checkbox" id="segok${i}"> Checked <span class="badge human">Human</span></label>
+      </div>
+    </div>` : `
+    <div class="seg"><span class="ts">${mmss(s.t)}</span><p class="asr">${esc(s.asr)}</p></div>`).join("");
+  LECTURE.forEach((s, i) => {
+    if (!s.flags) return;
+    $("seg" + i).addEventListener("input", e => { S.edits[i] = e.target.value; });
+    $("segok" + i).addEventListener("change", e => { S.checked[i] = e.target.checked; updatePublish(); });
+  });
+  $("sumEdit").value = SUMMARY;
+  $("glossEdit").innerHTML = "<tr><th>English</th><th>Русский</th><th>Қазақша</th></tr>" +
+    GLOSS.map(g => `<tr><td>${esc(g.en)}</td><td>${esc(g.ru)}</td><td>${esc(g.kz)}</td></tr>`).join("");
+  updatePublish();
+}
+function updatePublish() {
+  const left = LECTURE.filter((s, i) => s.flags && !S.checked[i]).length;
+  $("flagCount").textContent = left;
+  $("publish").disabled = !(left === 0 && $("sumOk").checked && $("glossOk").checked) || S.published;
+  status();
+}
+$("sumOk").addEventListener("change", updatePublish);
+$("glossOk").addEventListener("change", updatePublish);
+$("publish").addEventListener("click", () => {
+  S.published = true; $("publish").disabled = true; $("publish").textContent = "Published";
+  $("pubNote").textContent = "Published. Students now see the checked version.";
+  $("steps").lastElementChild.classList.remove("run"); $("steps").lastElementChild.classList.add("done");
+  buildStudent(); status();
+});
+
+/* 3. student */
+function finalText(i) { return LECTURE[i].flags ? S.edits[i] : LECTURE[i].asr; }
+function buildStudent() {
+  $("notPublished").hidden = true; $("studentBody").hidden = false;
+  $("trList").innerHTML = LECTURE.map((s, i) => `
+    <p id="tr${i}" data-i="${i}"><span class="ts">${mmss(s.t)}</span><span>${esc(finalText(i))}
+      <button type="button" class="link" data-ask="${i}">Unclear?</button></span></p>`).join("");
+  $("sumView").innerHTML = "<ul class='clean'>" + $("sumEdit").value.split("\n").filter(Boolean).map(l => "<li>" + esc(l) + "</li>").join("") + "</ul>";
+  $("qsView").innerHTML = QUESTIONS.map(q => "<li>" + esc(q) + "</li>").join("");
+  renderGloss();
+}
+function renderGloss() {
+  const l = $("lang").value;
+  $("glossView").innerHTML = GLOSS.map(g => `<tr><td><strong>${esc(g.en)}</strong></td><td>${esc(g[l])}</td></tr>`).join("");
+}
+$("lang").addEventListener("change", renderGloss);
+$("trList").addEventListener("click", e => {
+  const ask = e.target.closest("[data-ask]");
+  if (ask) {
+    const i = +ask.dataset.ask;
+    S.questions.push({ i, at: mmss(LECTURE[i].t) });
+    ask.textContent = "Sent to teacher"; ask.disabled = true;
+    renderTeacherQs(); status(); return;
+  }
+  const p = e.target.closest("p[data-i]");
+  if (p) { S.pos = LECTURE[+p.dataset.i].t; tick(true); }
+});
+function renderTeacherQs() {
+  $("teacherQs").innerHTML = S.questions.map(q =>
+    `<div class="q"><span class="note">${q.at} · anonymous student</span><p>Marked as unclear: “${esc(finalText(q.i))}”</p><span class="note">Plan: explain this point in the next seminar. <span class="badge human">Human</span></span></div>`).join("");
+}
+function currentIndex() { let k = 0; LECTURE.forEach((s, i) => { if (S.pos >= s.t) k = i; }); return k; }
+function tick(seek) {
+  if (!seek) S.pos = Math.min(DURATION, S.pos + 1);
+  const k = currentIndex();
+  $("cap").textContent = finalText(k);
+  $("prog").style.width = (S.pos / DURATION * 100) + "%";
+  $("clock").textContent = mmss(S.pos) + " / " + mmss(DURATION);
+  LECTURE.forEach((s, i) => $("tr" + i).classList.toggle("now", i === k));
+  if (S.pos >= DURATION) stopPlay();
+}
+function stopPlay() { clearInterval(S.timer); S.timer = null; $("play").textContent = "Play"; }
+$("play").addEventListener("click", () => {
+  if (S.timer) { stopPlay(); return; }
+  if (S.pos >= DURATION) S.pos = 0;
+  $("play").textContent = "Pause"; tick(true);
+  S.timer = setInterval(() => tick(false), 250); /* 4x speed for the demo */
+});
+$("capSize").addEventListener("input", e => document.documentElement.style.setProperty("--cap-size", e.target.value + "px"));
+$("hc").addEventListener("change", e => document.body.classList.toggle("hc", e.target.checked));
+
+/* live captions: real browser speech recognition */
+let rec = null;
+$("liveBtn").addEventListener("click", () => {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { $("liveBox").textContent = "This browser has no built-in speech recognition. Open the prototype in Chrome or Edge."; return; }
+  if (rec) { const r = rec; rec = null; r.stop(); $("liveBtn").textContent = "Start live captions"; return; }
+  rec = new SR(); rec.lang = "en-US"; rec.continuous = true; rec.interimResults = true;
+  rec.onresult = e => { let t = ""; for (let i = Math.max(0, e.results.length - 2); i < e.results.length; i++) t += e.results[i][0].transcript + " "; $("liveBox").textContent = t; };
+  rec.onerror = e => { $("liveBox").textContent = e.error === "not-allowed" || e.error === "service-not-allowed" ? "Microphone access is blocked here. Open the local copy of the prototype in Chrome and allow the microphone." : "Speech recognition stopped: " + e.error; rec = null; $("liveBtn").textContent = "Start live captions"; };
+  rec.onend = () => { if (rec) { try { rec.start(); } catch (_) {} } };
+  try { rec.start(); $("liveBtn").textContent = "Stop live captions"; $("liveBox").textContent = "Listening…"; } catch (_) { $("liveBox").textContent = "Could not start speech recognition."; }
+});
+
+show(); status();
+</script>
+
+</html>
